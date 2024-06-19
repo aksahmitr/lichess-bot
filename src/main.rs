@@ -7,7 +7,72 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 struct Event {
     #[serde(rename = "type")]
-    event_type: String,
+    type_string: String,
+    #[serde(flatten)]
+    event_type: EventType,
+}
+
+#[derive(Deserialize, Debug)]
+enum EventType {
+    #[serde(rename = "challenge")]
+    ChallengeEvent(ChallengeEvent),
+    #[serde(rename = "game")]
+    GameEvent(GameEvent),
+}
+
+#[derive(Deserialize, Debug)]
+struct User {
+    id: String,
+    name: String,
+    rating: u32,
+    title: Option<String>,
+    provisional: bool,
+    online: Option<bool>,
+    lag: Option<u32>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Variant {
+    key: String,
+    name: String,
+    short: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct TimeControl {
+    #[serde(rename = "type")]
+    time_type: String,
+    limit: Option<u32>,
+    increment: Option<u32>,
+    show: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Perf {
+    icon: String,
+    name: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct ChallengeEvent {
+    id: String,
+    url: String,
+    status: String,
+    challenger: User,
+    destUser: User,
+    variant: Variant,
+    rated: bool,
+    speed: String,
+    timeControl: TimeControl,
+    color: String,
+    finalColor: String,
+    perf: Perf,
+    direction: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct GameEvent {
+    gameId: String,
 }
 
 fn create_client() -> Result<Client> {
@@ -50,6 +115,5 @@ async fn main() -> Result<()> {
         let event: Event = serde_json::from_str(event_str)?;
         println!("{:#?}", event);
     }
-    //println!("{:#?}", res);
     Ok(())
 }
