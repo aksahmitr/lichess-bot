@@ -23,10 +23,11 @@ enum EventType {
 #[derive(Deserialize, Debug)]
 struct User {
     id: String,
+    #[serde(alias = "username")]
     name: String,
     rating: u32,
     title: Option<String>,
-    provisional: bool,
+    provisional: Option<bool>,
     online: Option<bool>,
     lag: Option<u32>,
 }
@@ -74,6 +75,7 @@ struct ChallengeEvent {
 struct GameEvent {
     #[serde(rename = "gameId")]
     game_id: String,
+    opponent: User,
 }
 
 fn create_client() -> Result<Client> {
@@ -98,9 +100,7 @@ lazy_static! {
     static ref CLIENT: Client = create_client().unwrap();
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    dotenv::dotenv().ok();
+async fn setup_event_stream() -> Result<()> {
     let mut event_stream = CLIENT
         .get("https://lichess.org/api/stream/event")
         .send()
@@ -141,9 +141,27 @@ async fn main() -> Result<()> {
                 }
             }
             EventType::GameEvent(game) => {
-                println!("Received GameEvent : {:#?}", game);
+                if event.type_string == "gameStart" {
+                    println!(
+                        "Received gameStart from {}; id: {}",
+                        game.opponent.id, game.game_id
+                    );
+                } else {
+                    //run game stream
+                    println!(
+                        "Received {} from {}; id: {}",
+                        event.type_string, game.opponent.id, game.game_id
+                    );
+                }
             }
         }
     }
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+    setup_event_stream().await?;
     Ok(())
 }
