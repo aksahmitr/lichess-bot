@@ -72,7 +72,8 @@ struct ChallengeEvent {
 
 #[derive(Deserialize, Debug)]
 struct GameEvent {
-    gameId: String,
+    #[serde(rename = "gameId")]
+    game_id: String,
 }
 
 fn create_client() -> Result<Client> {
@@ -114,18 +115,33 @@ async fn main() -> Result<()> {
         }
         let event: Event = serde_json::from_str(event_str)?;
 
-        if let EventType::ChallengeEvent(challenge) = event.event_type {
-            if challenge.status == "created" {
-                let _res = CLIENT
-                    .post(format!(
-                        "https://lichess.org/api/challenge/{}/accept",
-                        challenge.id
-                    ))
-                    .send()
-                    .await?;
-                println!("Accepted Challenge from {}", challenge.challenger.id);
-            } else {
-                println!("Declined Challenge from {}", challenge.challenger.id);
+        match event.event_type {
+            EventType::ChallengeEvent(challenge) => {
+                if challenge.status == "created" {
+                    let _res = CLIENT
+                        .post(format!(
+                            "https://lichess.org/api/challenge/{}/accept",
+                            challenge.id
+                        ))
+                        .send()
+                        .await?;
+                    println!(
+                        "Accepted Challenge from {}; url: {}",
+                        challenge.challenger.id, challenge.url
+                    );
+                } else {
+                    let _res = CLIENT
+                        .post(format!(
+                            "https://lichess.org/api/challenge/{}/decline",
+                            challenge.id
+                        ))
+                        .send()
+                        .await?;
+                    println!("Declined Challenge from {}", challenge.challenger.id);
+                }
+            }
+            EventType::GameEvent(game) => {
+                println!("Received GameEvent : {:#?}", game);
             }
         }
     }
