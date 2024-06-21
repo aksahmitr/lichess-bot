@@ -115,16 +115,18 @@ async fn main() -> Result<()> {
         let event: Event = serde_json::from_str(event_str)?;
 
         if let EventType::ChallengeEvent(challenge) = event.event_type {
-            //accept challenge
-            //if challenge is valid
-            let res = CLIENT
-                .post(format!(
-                    "https://lichess.org/api/challenge/{}/accept",
-                    challenge.id
-                ))
-                .send()
-                .await?;
-            println!("{:#?}", challenge);
+            if challenge.status == "created" {
+                let _res = CLIENT
+                    .post(format!(
+                        "https://lichess.org/api/challenge/{}/accept",
+                        challenge.id
+                    ))
+                    .send()
+                    .await?;
+                println!("Accepted Challenge from {}", challenge.challenger.id);
+            } else {
+                println!("Declined Challenge from {}", challenge.challenger.id);
+            }
         }
     }
     Ok(())
